@@ -16,15 +16,15 @@
     const context = canvas.getContext('2d');
 
     // vars
-	let angle = 0.0;
+    let angle = 0.0;
     let frameCount = 0; 
     let fps = 0; 
     let nextTime = performance.now(); 
 
     // update
     function draw() {
-	  // diff
-	  const defferentSize = document.querySelector('#differentsize').checked;
+      // diff
+      const defferentSize = document.querySelector('#differentsize').checked;
 	
       // clear
       context.fillStyle = '#808080ff';
@@ -34,49 +34,49 @@
       context.fillStyle = '#ffffffff';
       context.strokeStyle = '#0000ffff';	  
 	  
-	  // draw
+      // draw
       for(let i = 1; i <= 8000; i++) {
         let x = 320.0 + Math.cos(angle + i * 0.02) * (10.0 + i * 0.027);
         let y = 240.0 + Math.sin(angle + i * 0.02) * (10.0 + i * 0.027);
         //circle 
         context.beginPath();
-		if (!defferentSize) {
+        if (!defferentSize) {
           context.arc(x, y, 10, 0.0, Math.PI * 2.0);
-		} else {
-		  context.arc(x, y, 10 - i * 0.001, 0.0, Math.PI * 2.0);
-		}
+        } else {
+          context.arc(x, y, 10 - i * 0.001, 0.0, Math.PI * 2.0);
+        }
         context.fill();
-		context.stroke();
+        context.stroke();
         context.closePath();
       }
   
       // next
       angle = angle + 0.03;
 	  
-	  // fps
-	  frameCount++;
-	  if (nextTime <= performance.now()) {
-		fps = frameCount;
+      // fps
+      frameCount++;
+      if (nextTime <= performance.now()) {
+        fps = frameCount;
         frameCount = 0;
-		nextTime = nextTime + 1000;
-	  }
+        nextTime = performance.now() + 1000;
+      }
       context.fillStyle = 'black';
       context.font = '16px Arial';
       context.fillText(`FPS: ${fps}`, 10, 20);
 
       // get pixel
-	  if (document.querySelector('#getpixel').checked) {
+      if (document.querySelector('#getpixel').checked) {
         const imageData = context.getImageData(140, 240, 1, 1); // get pixel
         const color = imageData.data;
-	    context.fillText(color, 10, 40);
-	  }
+        context.fillText(color, 10, 40);
+      }
 
       // new
-	  if (document.querySelector('#setinterval').checked) {
-	    setInterval(draw, 16);
-	  } else {
-	    requestAnimationFrame(draw);
-	  }
+      if (document.querySelector('#setinterval').checked) {
+        setInterval(draw, 16);
+      } else {
+        requestAnimationFrame(draw);
+      }
     }
 
     // run
