@@ -8,6 +8,7 @@
   <div><input id="getpixel" type="checkbox"><label for="getpixel">get pixel via getImageData (switch to CPU render) (reload page for uncheck)</label></div>
   <div><input id="setinterval" type="checkbox"><label for="setinterval">setInterval for update (reload page for uncheck)</label></div>
   <div><input id="differentsize" type="checkbox"><label for="differentsize">different size</label></div>
+  <div><input id="doublecount" type="checkbox"><label for="doublecount">double count for fast PC (16000 circles)</label></div>
   <script>
     // setup
     const canvas = document.getElementById('canvas');
@@ -24,8 +25,11 @@
     // update
     function draw() {
       // diff
-      const defferentSize = document.querySelector('#differentsize').checked;
-	
+      const differentSize = document.querySelector('#differentsize').checked;
+	  
+	  // double count
+	  const doubleCount = document.querySelector('#doublecount').checked;
+	  
       // clear
       context.fillStyle = '#808080ff';
       context.fillRect(0, 0, canvas.width, canvas.height);
@@ -35,12 +39,12 @@
       context.strokeStyle = '#0000ffff';	  
 	  
       // draw
-      for(let i = 1; i <= 8000; i++) {
+      for(let i = 1; i <= 8000; i = i + (doubleCount ? 0.5 : 1)) {
         let x = 320.0 + Math.cos(angle + i * 0.02) * (10.0 + i * 0.027);
         let y = 240.0 + Math.sin(angle + i * 0.02) * (10.0 + i * 0.027);
         //circle 
         context.beginPath();
-        if (!defferentSize) {
+        if (!differentSize) {
           context.arc(x, y, 10, 0.0, Math.PI * 2.0);
         } else {
           context.arc(x, y, 10 - i * 0.001, 0.0, Math.PI * 2.0);
