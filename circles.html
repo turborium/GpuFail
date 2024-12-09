@@ -1,89 +1,119 @@
 <html>
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>circles</title>
+  <style>canvas {transform: translateZ(0);}</style>
 </head>
 <body>
   <canvas id="canvas"></canvas>
-  <div><input id="getpixel" type="checkbox"><label for="getpixel">get pixel via getImageData (switch to CPU render) (reload page for uncheck)</label></div>
-  <div><input id="setinterval" type="checkbox"><label for="setinterval">setInterval for update (reload page for uncheck)</label></div>
-  <div><input id="differentsize" type="checkbox"><label for="differentsize">different size</label></div>
-  <div><input id="doublecount" type="checkbox"><label for="doublecount">double count for fast PC (16000 circles)</label></div>
+  <div><input id="getpixel" type="checkbox" /><label for="getpixel">get pixel via getImageData (switch to CPU render) (reload page for uncheck)</label></div>
+  <div><input id="fpsbox" type="checkbox" /><label for="fpsbox">set FPS (skip frames more accurate):</label>
+       <input id="fps" type="number" value="60" min="1" max="9999" style="width: 60px; margin-left: 10px" />
+       <select id="fpsmethod" style="margin-left: 10px">
+         <option value="settimeout">setTimeout</option>
+         <option value="skip">skip frames</option>
+       </select>
+  </div>
+  <div><input id="differentsize" type="checkbox" /><label for="differentsize">different size</label></div>
+  <div><input id="doublecount" type="checkbox" /><label for="doublecount">double count for fast PC (16000 circles)</label></div>
   <script>
-    // setup
-    const canvas = document.getElementById('canvas');
+    // Setup
+    const canvas = document.getElementById("canvas");
     canvas.width = 640;
     canvas.height = 480;
-    const context = canvas.getContext('2d');
+    const context = canvas.getContext("2d", { alpha: false });
 
-    // vars
+    // Cache DOM elements
+    const getPixelCheckbox = document.querySelector("#getpixel");
+    const setFpsCheckbox = document.querySelector("#fpsbox");
+    const fpsInput = document.querySelector("#fps");
+    const fpsMethod = document.querySelector("#fpsmethod");
+    const differentSizeCheckbox = document.querySelector("#differentsize");
+    const doubleCountCheckbox = document.querySelector("#doublecount");
+
+    // Precalculate constants
+    const CENTER_X = canvas.width / 2.0;
+    const CENTER_Y = canvas.height / 2.0;
+    const TWO_PI = Math.PI * 2.0;
+
+    // Vars
     let angle = 0.0;
-    let frameCount = 0; 
-    let fps = 0; 
-    let nextTime = performance.now(); 
+    let fps = 0.0;
+    let lastTime = performance.now();
+    let nextTime = lastTime + 1000;
+    let lastFrameTime = 0;
 
-    // update
-    function draw() {
-      // diff
-      const differentSize = document.querySelector('#differentsize').checked;
-	  
-	  // double count
-	  const doubleCount = document.querySelector('#doublecount').checked;
-	  
-      // clear
-      context.fillStyle = '#808080ff';
+    // Draw
+    function draw(timestamp) {
+      // Check if we should skip this frame for FPS limiting
+      if (setFpsCheckbox.checked && fpsMethod.value === 'skip') {
+        const targetFPS = parseInt(fpsInput.value) || 60.0;
+        const frameInterval = 1000.0 / targetFPS;
+        if (timestamp - lastFrameTime < frameInterval) {
+          requestAnimationFrame(draw);
+          return;
+        }
+        lastFrameTime = timestamp;
+      }
+
+      context.fillStyle = "#808080";
       context.fillRect(0, 0, canvas.width, canvas.height);
 
-      // colors
-      context.fillStyle = '#ffffffff';
-      context.strokeStyle = '#0000ffff';	  
-	  
-      // draw
-      for(let i = 1; i <= 8000; i = i + (doubleCount ? 0.5 : 1)) {
-        let x = 320.0 + Math.cos(angle + i * 0.02) * (10.0 + i * 0.027);
-        let y = 240.0 + Math.sin(angle + i * 0.02) * (10.0 + i * 0.027);
-        //circle 
+      context.fillStyle = "#ffffff";
+      context.strokeStyle = "#0000ff";
+
+      // Draw circles
+      const increment = doubleCountCheckbox.checked ? 0.5 : 1;
+      for (let i = 1; i <= 8000; i += increment) {
+        const radius = differentSizeCheckbox.checked ? 10 - i * 0.001 : 10;
+        const angleOffset = angle + i * 0.02;
+        const distance = 10.0 + i * 0.027;
+
+        const x = CENTER_X + Math.cos(angleOffset) * distance;
+        const y = CENTER_Y + Math.sin(angleOffset) * distance;
+
         context.beginPath();
-        if (!differentSize) {
-          context.arc(x, y, 10, 0.0, Math.PI * 2.0);
-        } else {
-          context.arc(x, y, 10 - i * 0.001, 0.0, Math.PI * 2.0);
-        }
+        context.arc(x, y, radius, 0, TWO_PI);
         context.fill();
         context.stroke();
         context.closePath();
       }
-  
-      // next
-      angle = angle + 0.03;
-	  
-      // fps
-      frameCount++;
-      if (nextTime <= performance.now()) {
-        fps = frameCount;
-        frameCount = 0;
-        nextTime = performance.now() + 1000;
-      }
-      context.fillStyle = 'black';
-      context.font = '16px Arial';
-      context.fillText(`FPS: ${fps}`, 10, 20);
 
-      // get pixel
-      if (document.querySelector('#getpixel').checked) {
-        const imageData = context.getImageData(140, 240, 1, 1); // get pixel
-        const color = imageData.data;
-        context.fillText(color, 10, 40);
+      // Next
+      angle += 0.03;
+
+      // Draw FPS
+      context.fillStyle = "black";
+      context.font = "16px Arial";
+      context.fillText(`FPS: ${fps.toFixed(1)}`, 10, 20);
+
+      // Get pixel for switch to CPU
+      if (getPixelCheckbox.checked) {
+        const imageData = context.getImageData(140, 240, 1, 1);
+        context.fillText(imageData.data, 10, 40);
       }
 
-      // new
-      if (document.querySelector('#setinterval').checked) {
-        setInterval(draw, 16);
+      // FPS counter
+      const currentTime = performance.now();
+      const deltaTime = currentTime - lastTime;
+      lastTime = currentTime;
+      fps = fps * 0.3 + (1000 / deltaTime) * 0.7;
+      if (nextTime <= currentTime) {
+        nextTime = currentTime + 1000;
+      }
+
+      // Start animation
+      if (setFpsCheckbox.checked && fpsMethod.value === 'settimeout') {
+        setTimeout(
+          requestAnimationFrame,
+          1000.0 / (parseInt(fpsInput.value) || 60.0),
+          draw
+        );
       } else {
         requestAnimationFrame(draw);
       }
     }
 
-    // run
     draw();
   </script>
 </body>
